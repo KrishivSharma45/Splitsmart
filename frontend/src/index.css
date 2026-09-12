@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    background-color: #f2eee6;
+  }
+  body {
+    @apply bg-cream text-ink font-sans antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-serif;
+  }
+}
+
+@layer components {
+  /* background-attachment: fixed anchors the tiling to the viewport instead
+     of each element's own box, so the grid lines up seamlessly across the
+     sidebar/header/main boundaries instead of each restarting its own tile
+     at its own corner. */
+  .bg-grid {
+    background-color: #f2eee6;
+    background-image:
+      linear-gradient(to right, rgba(23, 22, 15, 0.065) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(23, 22, 15, 0.065) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-attachment: fixed;
+  }
+  .bg-grid-soft {
+    background-color: #f7f4ed;
+    background-image:
+      linear-gradient(to right, rgba(23, 22, 15, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(23, 22, 15, 0.05) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-attachment: fixed;
+  }
+  .bg-grid-dark {
+    background-color: #17160f;
+    background-image:
+      linear-gradient(to right, rgba(242, 238, 230, 0.08) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(242, 238, 230, 0.08) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-attachment: fixed;
+  }
+  .bg-grid-white {
+    background-color: #ffffff;
+    background-image:
+      linear-gradient(to right, rgba(23, 22, 15, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(23, 22, 15, 0.05) 1px, transparent 1px);
+    background-size: 22px 22px;
+    background-attachment: fixed;
+  }
+  .card {
+    @apply rounded-2xl border border-line bg-cream-card;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-cream-soft transition hover:opacity-85 disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-ink/20 bg-transparent px-5 py-2.5 text-sm font-medium text-ink transition hover:bg-ink/5 disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-accent-red/30 bg-accent-red/5 px-5 py-2.5 text-sm font-medium text-accent-red transition hover:bg-accent-red/10 disabled:opacity-40;
+  }
+  .input {
+    @apply w-full rounded-lg border border-line bg-cream-soft px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:outline-none focus:ring-2 focus:ring-ink/20;
+  }
+  .label {
+    @apply mb-1 block text-xs font-medium uppercase tracking-wide text-ink-faint;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-cream-soft px-3 py-1 text-xs font-medium text-ink-soft;
+  }
+  .mono {
+    @apply font-mono text-xs tracking-tight;
+  }
+}
