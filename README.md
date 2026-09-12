@@ -1,239 +1,403 @@
-# SplitSmart
+<div align="center">
 
-A secure group expense management platform. SplitSmart tracks who paid for what, calculates
-who owes whom, and settles balances — like any expense-splitting app. What makes it different
-is the layer underneath: **every financial and administrative action is recorded in a
-cryptographically chained, tamper-evident audit ledger**, and the system can independently
-verify — on demand — whether that history has been altered.
+# 💸 SplitSmart
 
+### Secure Group Expense Platform with a Tamper-Evident Audit Ledger
+
+**SplitSmart** is a secure group expense management platform. It tracks who paid for what,
+calculates who owes whom, and settles balances — like any expense-splitting app. What makes it
+different is the layer underneath: **every financial and administrative action is recorded in a
+cryptographically chained audit ledger**, and the system can independently verify — on demand —
+whether that history has been altered.
+
+<br>
+
+![React](https://img.shields.io/badge/React-Frontend-61DAFB?style=for-the-badge&logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-Strict-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Vite](https://img.shields.io/badge/Vite-Build%20Tool-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)
+
+<br>
+
+![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-D71F00?style=for-the-badge)
+![SQLite](https://img.shields.io/badge/SQLite-Dev%20DB-003B57?style=for-the-badge&logo=sqlite&logoColor=white)
+![JWT](https://img.shields.io/badge/JWT-Auth-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)
+![Tests](https://img.shields.io/badge/Tests-48%20passing-success?style=for-the-badge)
+![Audit](https://img.shields.io/badge/Audit-SHA--256%20Chained-red?style=for-the-badge)
+
+</div>
+
+---
+
+## 🖥️ Product Preview
+
+<p align="center">
+  <img src="docs/hero.png" alt="SplitSmart dashboard" width="100%">
+</p>
+
+<p align="center">
+  <i>Real data, computed by the backend — balances, category spend, and audit status shown here are never faked on the frontend.</i>
+</p>
+
+---
+
+## 🧭 Why SplitSmart?
+
+Most expense-splitting apps stop at "who owes whom." That's the easy part. The harder question —
+the one that actually matters when money and trust are involved — is:
+
+> **Can the financial history be trusted? Has anything been quietly changed?**
+
+A normal app has no answer to that. If an expense amount gets edited after the fact — by a bug, a
+careless admin, or someone with direct database access — there's no way to ever know it happened.
+
+**SplitSmart is built audit-first.** Every register, login, expense, edit, void, settlement, and
+role change is chained into a single cryptographic ledger. Anyone in the app can hit "verify" and
+get a real, backend-computed answer: `VALID` or `COMPROMISED`.
+
+### Core Principles
+
+- **Transparency** — every balance is traceable back to the expenses and splits that produced it
+- **Accountability** — every action records who did it and when, enforced by the backend, not the UI
+- **Auditability** — a full, append-only history of every financial and administrative event
+- **Integrity** — tamper-evidence via a SHA-256 hash chain, independently verifiable at any time
+- **Correctness** — split math, balances, and roles are computed and enforced server-side only
+
+---
+
+## ✨ Features
+
+### 💰 Smart Expense Splitting
+
+- Create trips/groups, add and remove members, assign **Owner / Admin / Member** roles
+- Record expenses with description, amount, category, date, and notes
+- Four split methods, all validated server-side:
+  - **Equal** — divided evenly, remainder cents distributed deterministically
+  - **Exact** — explicit per-person amounts, must sum exactly to the total
+  - **Percentage** — per-person percentages, must sum to 100%
+  - **Shares** — weighted split (e.g. 2:2:1:1)
+- Backend balance engine computes `net = paid − owed + settlements_paid − settlements_received`
+  per member — never trusted from the frontend
+- Greedy debt-simplification collapses chains of IOUs into the fewest transactions needed to
+  settle a trip (A→B→C collapses to a single A→C where possible)
+
+### 🧾 Receipts & Settlements
+
+- Attach a receipt (image or PDF, size/type validated) to any expense, served only through an
+  authenticated endpoint scoped to trip membership — never a raw file path
+- Record settlements between members, with cancellation support (creator or admin/owner only)
+- Expenses and settlements are **voided, never deleted** (`ACTIVE → VOIDED`) — financial history
+  stays intact for the audit trail
+
+### 📊 Financial Dashboard
+
+- Total spending, active trip count, amount you owe vs. amount owed to you
+- Per-trip totals, category breakdown, recent expenses and settlements
+- Every number comes from a real API call — nothing is hardcoded or estimated client-side
+
+### 🔐 Secure Audit Ledger
+
+Every important action is written to an append-only ledger:
+
+```text
+USER_REGISTERED · USER_LOGIN · USER_LOGOUT · PASSWORD_CHANGED
+TRIP_CREATED · TRIP_UPDATED · TRIP_ARCHIVED
+MEMBER_ADDED · MEMBER_REMOVED · ROLE_CHANGED
+EXPENSE_CREATED · EXPENSE_UPDATED · EXPENSE_VOIDED
+SETTLEMENT_CREATED · SETTLEMENT_CANCELLED
+REPORT_GENERATED · AUDIT_VERIFICATION_RUN
 ```
-Record → Calculate → Settle → Cryptographically Audit → Verify Integrity
+
+There is no update/delete route for this table anywhere in the app — it is append-only by
+construction. Edits to an expense record *both* the previous and new state in the same event.
+
+### 🔗 Cryptographically Chained Audit Trail
+
+Each ledger entry hashes itself together with the hash of the entry before it:
+
+```text
+Event A  (previous_hash = GENESIS)
+   │
+   ▼
+current_hash = SHA256(type ⧺ actor ⧺ entity ⧺ timestamp ⧺ data ⧺ previous_hash)
+   │
+   ▼
+Event B  (previous_hash = Event A's current_hash)
+   │
+   ▼
+current_hash = SHA256( ... ⧺ previous_hash )
+   │
+   ▼
+Event C  (previous_hash = Event B's current_hash)
 ```
 
-> Security controls in this project (password hashing, RBAC, the audit chain, rate limiting,
-> etc.) are implemented in-house and inspired by SOC 2 / ISO 27001 principles. **SplitSmart is
-> not independently certified** and makes no such claim.
+**Verification** walks the entire chain from genesis, recomputes every hash, and checks each
+`previous_hash` link. If a single field of a single historical record is edited directly in the
+database, the very next verification reports `COMPROMISED` — and names the exact record. This is
+tested: `backend/tests/test_tamper_detection.py` mutates a row directly via the DB session,
+bypassing the app entirely, and asserts the chain reports the break.
 
-## Table of contents
+### 🛡️ Security Center
 
-- [Architecture](#architecture)
-- [Features](#features)
-- [Tech stack](#tech-stack)
-- [Database schema](#database-schema)
-- [Security model](#security-model)
-- [The audit chain, explained](#the-audit-chain-explained)
-- [Setup](#setup)
-- [Environment variables](#environment-variables)
-- [Running the backend](#running-the-backend)
-- [Running the frontend](#running-the-frontend)
-- [Testing](#testing)
-- [Demo data](#demo-data)
-- [API overview](#api-overview)
+- Live database and audit-chain status, pulled from a real check on every page load
+- Total audit events, last verification time, integrity violation count
+- Your recent authentication activity and a manual "Run verification" button
+- A dedicated **Audit Ledger** page: the raw, paginated, filterable event table with truncated
+  hashes
 
-## Architecture
+### 🔑 Authentication & Access Control
 
+- Passwords hashed with **bcrypt**; JWT access tokens (short-lived) + rotating, revocable refresh
+  tokens (httpOnly cookie, hashed at rest)
+- Role-based access control — **Owner / Admin / Member** — enforced on every trip-scoped backend
+  route, never inferred from the frontend
+- Rate limiting on login/register, sanitized error responses (no stack traces or secrets leaked),
+  strict CORS, standard security headers
+
+### 📑 Reports
+
+- Per-trip summary: totals, member balances, category breakdown, settlement history
+- CSV export for expenses, balances, settlements, and the audit trail itself
+- One-page PDF summary export
+
+---
+
+## ⚙️ How SplitSmart Works
+
+```text
+                         USER (browser)
+                              │
+                              ▼
+                  React + TypeScript Frontend
+                    (Vite dev proxy → /api)
+                              │
+                              ▼
+                         FastAPI Backend
+                              │
+        ┌──────────┬──────────┼──────────┬──────────┐
+        ▼          ▼          ▼          ▼          ▼
+     Trips     Expenses   Settlements  Reports  Notifications
+        │          │          │          │          │
+        └──────────┴────┬─────┴──────────┴──────────┘
+                         ▼
+                  Balance Engine +
+              Debt Simplification
+                         │
+                         ▼
+                   Audit Service
+            (SHA-256 hash chain, append-only)
+                         │
+                         ▼
+              SQLite (dev) / PostgreSQL-ready
+                         │
+                         ▼
+          Security Center · Audit Ledger · Dashboard
 ```
+
+---
+
+## 🔄 Application Workflow
+
+```text
+Register / Log in
+        ↓
+Create Trip  (you become OWNER)
+        ↓
+Add Members  (by email, assign role)
+        ↓
+Record Expense  (choose payer, split method, participants)
+        ↓
+Backend validates split & computes shares
+        ↓
+Balances recalculated (paid − owed + settlements)
+        ↓
+Audit Event Written & Chained  (hash = f(data, previous_hash))
+        ↓
+Settle Up  (record settlement, optionally simplified)
+        ↓
+Run Verification  →  VALID or COMPROMISED
+```
+
+---
+
+## 🏗️ System Architecture
+
+```text
+┌───────────────────────────────────────────────────┐
+│                 REACT + TYPESCRIPT                 │
+│                                                     │
+│  Dashboard · Trips · Expenses · Balances           │
+│  Settlements · Security Center · Audit Ledger      │
+│  Reports · Settings                                │
+└────────────────────────┬────────────────────────────┘
+                         │ REST (axios, silent refresh)
+                         ▼
+┌───────────────────────────────────────────────────┐
+│                   FASTAPI BACKEND                  │
+│                                                     │
+│  routers/  → HTTP layer, auth deps, RBAC guards    │
+│  services/ → business logic (balances, splits,     │
+│              debt simplification, trips, reports)  │
+│  security/ → password hashing, JWT, refresh tokens │
+│  audit/    → hash chain, append, verify            │
+└──────────┬──────────────────────────┬───────────────┘
+           ▼                          ▼
+┌────────────────────┐     ┌───────────────────────┐
+│   RELATIONAL DB     │     │      AUDIT LEDGER      │
+│  (SQLite / Postgres) │     │  (same DB, own table)  │
+│                     │     │                        │
+│ users, trips,        │     │ event_type, actor_id   │
+│ trip_members,        │     │ entity, event_data     │
+│ expenses, splits,    │     │ previous_hash          │
+│ settlements,         │     │ current_hash           │
+│ notifications         │     │ (append-only)          │
+└────────────────────┘     └───────────────────────┘
+```
+
+---
+
+## 🔐 Security Model
+
+SplitSmart's security model is built around **traceability, integrity, and least-privilege
+access** — implemented in-house, inspired by (but not certified against) SOC 2 / ISO 27001
+principles. See the [Disclaimer](#️-disclaimer) below.
+
+### Audit Record Shape
+
+```text
+AuditLog
+├── id
+├── event_type        e.g. EXPENSE_VOIDED
+├── actor_id           who did it
+├── trip_id            which trip (nullable — account-level events)
+├── entity_type/id      what was acted on
+├── event_data         canonical JSON (previous + new state for edits)
+├── timestamp
+├── previous_hash       ← the entry before it
+└── current_hash        SHA256(everything above)
+```
+
+### What's enforced, and where
+
+| Concern | Enforced by |
+|---|---|
+| Passwords | bcrypt via `passlib`, never stored or logged in plaintext |
+| Sessions | JWT access token + rotating opaque refresh token (hashed at rest, httpOnly cookie) |
+| Authorization | Per-request RBAC dependency, resolved from the DB — never from the request body |
+| Split totals & balances | Recomputed server-side from `Decimal` math — frontend values are advisory only |
+| Audit integrity | SHA-256 chain, append-only table, no update/delete code path exists |
+| Uploads | Content-type allowlist, size limit, served via authenticated route only |
+| Brute force | Rate limiting on `/auth/login` and `/auth/register` |
+
+---
+
+## 💻 Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 18 + TypeScript |
+| Build Tool | Vite |
+| Styling | Tailwind CSS |
+| Data fetching | TanStack Query (React Query) |
+| Routing | React Router |
+| Charts | Recharts |
+| Backend | Python 3.11+ |
+| API Framework | FastAPI |
+| Validation | Pydantic v2 |
+| ORM | SQLAlchemy 2.0 |
+| Migrations | Alembic |
+| Database | SQLite (dev) — PostgreSQL-compatible schema |
+| Auth | JWT + bcrypt (passlib) |
+| Audit System | SHA-256 cryptographic hash chain |
+| Testing | pytest (48 tests) |
+| Version Control | Git + GitHub |
+
+---
+
+## 📁 Project Structure
+
+```text
 SplitSmart/
+│
 ├── backend/
 │   ├── app/
-│   │   ├── main.py           # app factory, middleware, exception handlers, routers
-│   │   ├── config.py         # env-driven settings
-│   │   ├── database.py       # SQLAlchemy engine/session
-│   │   ├── models/           # SQLAlchemy ORM models
-│   │   ├── schemas/          # Pydantic request/response schemas
-│   │   ├── routers/          # FastAPI route handlers (thin; delegate to services)
-│   │   ├── services/         # business logic: balances, splits, trips, settlements, reports
-│   │   ├── audit/            # the cryptographic ledger: hashing, append, verification
-│   │   ├── security/         # password hashing, JWT, RBAC deps, rate limiting
-│   │   └── utils/            # canonical JSON, Decimal money helpers
-│   ├── alembic/               # database migrations
-│   ├── tests/                  # pytest suite
-│   └── seed.py                  # demo data generator
-└── frontend/
-    ├── src/
-    │   ├── api/                # axios client + typed per-domain API functions
-    │   ├── components/          # shared UI, plus trip/ and expense/ and audit/ subfolders
-    │   ├── pages/                # one component per route
-    │   ├── context/               # AuthContext (in-memory access token, silent refresh)
-    │   ├── types/                  # TS interfaces mirroring backend schemas
-    │   └── utils/                   # formatting, RBAC helpers
-    └── vite.config.ts                # dev proxy to the backend (see Security model)
+│   │   ├── main.py              # app factory, middleware, routers
+│   │   ├── config.py            # env-driven settings
+│   │   ├── database.py          # engine/session
+│   │   ├── models/              # SQLAlchemy models
+│   │   ├── schemas/             # Pydantic request/response schemas
+│   │   ├── routers/             # HTTP layer per domain
+│   │   ├── services/            # balance engine, splits, trips, reports
+│   │   ├── security/            # password hashing, JWT, RBAC, tokens
+│   │   ├── audit/                # hash chain, append, verify
+│   │   └── utils/                # money math, canonical JSON
+│   ├── alembic/                  # migrations
+│   ├── tests/                    # 48 pytest tests
+│   ├── seed.py                    # demo data generator
+│   └── requirements.txt
+│
+├── frontend/
+│   ├── src/
+│   │   ├── api/                   # typed API client per domain
+│   │   ├── components/            # shared UI, tabs, modals
+│   │   ├── pages/                 # route-level pages
+│   │   ├── context/                # AuthContext
+│   │   ├── types/                  # TS interfaces mirroring backend schemas
+│   │   └── utils/                   # formatting, role helpers
+│   ├── vite.config.ts               # dev proxy → backend, same-origin cookies
+│   └── package.json
+│
+├── docs/
+│   └── hero.png
+│
+├── .env.example
+├── .gitignore
+└── README.md
 ```
 
-The backend is the **sole source of truth** for money math, role checks, and integrity status.
-The frontend never computes a balance, split, or permission decision on its own — it only
-renders what the API returns. Nothing here is faked: every number on the dashboard, the
-Security Center, and the Audit Ledger comes from a real database query or a real hash
-verification pass.
+---
 
-## Features
-
-- **Trips/groups** with members, roles, start/end dates, currency, archiving (soft-delete).
-- **Expenses** with four split methods (equal, exact, percentage, shares), categories,
-  filtering/search/sort, receipt attachments, and edit/void history — expenses are never hard
-  deleted, only moved `ACTIVE → VOIDED` so the historical record stays intact.
-- **Balance engine**: `net_balance = paid − owed + settlements_paid − settlements_received`,
-  computed server-side per trip.
-- **Debt simplification**: a greedy largest-debtor/largest-creditor match that collapses chains
-  of IOUs into the minimum number of settling transactions.
-- **Settlements** (`COMPLETED` / `CANCELLED`) that feed directly into the balance engine.
-- **Role-based access control**: `OWNER` / `ADMIN` / `MEMBER`, enforced on the backend on every
-  trip-scoped route — never inferred from the frontend.
-- **Cryptographic audit ledger**: one global, append-only, SHA-256 hash-chained sequence of
-  every register, login, trip/member/expense/settlement/role change, and report export.
-- **Integrity verification**: walks the entire ledger from genesis, recomputes every hash, and
-  reports `VALID` or `COMPROMISED` with the exact affected record.
-- **Security Center**: live database/ledger status, verification history, integrity violation
-  count, and recent authentication activity — all pulled from real endpoints.
-- **Reports**: trip summary, member balances, settlement history, and audit activity, exportable
-  as CSV (each type) and a one-page PDF summary.
-- **Notifications**: in-app, generated for member adds, expenses, settlements, and role changes.
-- **Receipts**: image/PDF upload with size/type validation, served only through an authenticated
-  endpoint (no static file paths are ever exposed).
-
-## Tech stack
-
-**Backend** — Python 3.11+, FastAPI, SQLAlchemy 2.0, Pydantic v2, Alembic, SQLite (dev) /
-Postgres-compatible, passlib[bcrypt], PyJWT, slowapi (rate limiting), fpdf2 (PDF export),
-pytest + httpx.
-
-**Frontend** — React 18, TypeScript, Vite, React Router v6, @tanstack/react-query, axios,
-Tailwind CSS, recharts, react-hot-toast.
-
-## Database schema
-
-| Table | Purpose |
-|---|---|
-| `users` | accounts, bcrypt-hashed passwords |
-| `trips` | trip/group metadata, status (`ACTIVE`/`ARCHIVED`) |
-| `trip_members` | membership + role (`OWNER`/`ADMIN`/`MEMBER`), status (`ACTIVE`/`REMOVED`) |
-| `expenses` | amount, payer, category, split method, status (`ACTIVE`/`VOIDED`) |
-| `expense_splits` | per-participant share of an expense |
-| `settlements` | payer → receiver payments, status (`COMPLETED`/`CANCELLED`) |
-| `audit_logs` | the append-only hash-chained ledger (see below) |
-| `notifications` | in-app notifications per user |
-| `receipts` | uploaded receipt metadata + server-side storage path |
-| `refresh_tokens` | hashed, revocable refresh tokens for session rotation |
-| `security_events` | operational signals (failed logins) — not part of the crypto chain |
-
-Relationships: `User → TripMember → Trip → Expense → ExpenseSplit`, `Trip → Settlement`, and
-every mutating action across all of the above `→ AuditLog`.
-
-Schema is managed with Alembic migrations (`backend/alembic/`); the initial revision is included.
-
-## Security model
-
-- **Passwords**: bcrypt via passlib, never stored or logged in plaintext.
-- **Sessions**: short-lived JWT access tokens (returned in the response body, kept in memory on
-  the frontend — never `localStorage`) plus a rotating, revocable refresh token stored **hashed**
-  in the database and set as an `httpOnly` cookie.
-- **Same-site cookie note**: the Vite dev server proxies `/api/*` to the backend
-  (`vite.config.ts`) so the frontend and API are same-origin in development — this is what lets
-  the `SameSite=Lax` refresh cookie actually get sent. If you deploy frontend and backend on
-  different origins in production, either keep them behind one reverse-proxy origin or adjust
-  the cookie's `SameSite`/domain settings accordingly.
-- **RBAC**: every trip-scoped route resolves the caller's role from `trip_members` via a FastAPI
-  dependency — role, trip ownership, and user identity are always derived from the authenticated
-  session server-side, never trusted from request bodies.
-- **Input validation**: Pydantic schemas at every boundary; split math (equal/exact/percentage/
-  shares) is validated and computed entirely server-side using `Decimal` arithmetic — amounts
-  are never trusted from the client.
-- **Rate limiting**: `/api/auth/login` and `/api/auth/register` are rate-limited (slowapi).
-- **Headers**: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy` on every response;
-  HSTS when `ENVIRONMENT=production`.
-- **Errors**: unhandled exceptions are logged server-side and return a generic `500` — stack
-  traces are never sent to the client.
-- **File uploads**: receipts are content-type/size validated, stored under a server-controlled
-  path, and served only via an authenticated endpoint that checks trip membership.
-
-## The audit chain, explained
-
-Every important action creates one row in the global `audit_logs` table:
-
-```
-current_hash = SHA256(event_type | actor_id | entity_id | timestamp | canonical(event_data) | previous_hash)
-```
-
-- The first record's `previous_hash` is a fixed genesis constant.
-- Every later record's `previous_hash` is the previous record's `current_hash`.
-- `event_data` is serialized once to canonical JSON (sorted keys, no whitespace) and that exact
-  string — not a re-derived one — is what gets hashed and stored, so the hash can always be
-  reproduced deterministically from the stored row.
-- No router or service ever issues an `UPDATE`/`DELETE` against `audit_logs` — it is append-only
-  by construction.
-
-**Verification** (`POST /api/audit/verify`, or per-trip at `POST /api/trips/{id}/audit/verify`)
-walks every record from genesis, recomputes each hash, and checks the `previous_hash` linkage.
-It returns:
-
-```json
-{ "status": "VALID", "records_checked": 124, "broken_links": 0, "affected_record": null }
-```
-
-or, if a record was altered directly in the database (bypassing the app):
-
-```json
-{ "status": "COMPROMISED", "records_checked": 124, "broken_links": 1, "affected_record": 87 }
-```
-
-This is **tamper-evident, not tamper-proof**: a hash chain within a single database can always
-be fully rewritten by someone with direct DB access who recomputes every downstream hash. What
-it guarantees is that the application itself has no update/delete path for history, and that any
-edit made outside the application — accidental or malicious, partial or careless — is detectable.
-`backend/tests/test_tamper_detection.py` demonstrates this directly: it mutates a stored row via
-the DB session (bypassing every service function) and asserts verification reports
-`COMPROMISED` with the correct `affected_record`.
-
-The ledger is **one global sequence**, not one per trip — that's the strongest integrity
-guarantee, since any tampering anywhere breaks one verifiable chain. The Audit Ledger and
-Security Center pages filter this ledger to what's relevant to you (your account's events, plus
-every trip you belong to); "Run verification" always checks the *entire* ledger, since that's
-the only way the result means anything.
-
-## Setup
+## 🚀 Getting Started
 
 ### Prerequisites
 
 - Python 3.11+
 - Node.js 20+
-- (Nothing else — SQLite ships with Python, no external DB server needed for local dev.)
+- Nothing else — SQLite ships with Python, no external DB server needed for local dev
 
-### Clone and configure
+### 1. Clone and configure
 
 ```bash
-git clone <this-repo>
+git clone https://github.com/KrishivSharma45/Splitsmart.git
 cd Splitsmart
 cp .env.example backend/.env
 cp .env.example frontend/.env   # only VITE_API_BASE_URL is read from here
 ```
 
-Edit `backend/.env` and set a real `SECRET_KEY` (`python -c "import secrets; print(secrets.token_hex(32))"`).
-The defaults otherwise work out of the box for local development.
+Edit `backend/.env` and set a real `SECRET_KEY`:
 
-## Environment variables
+```bash
+python -c "import secrets; print(secrets.token_hex(32))"
+```
 
-See [`.env.example`](.env.example) for the full list with comments. Backend reads from
-`backend/.env`; frontend reads `VITE_API_BASE_URL` from `frontend/.env`. Never commit a real
-`.env` file — both are gitignored.
-
-## Running the backend
+### 2. Backend
 
 ```bash
 cd backend
 python -m venv venv
-./venv/Scripts/activate        # Windows; use `source venv/bin/activate` on macOS/Linux
+./venv/Scripts/activate          # Windows; use `source venv/bin/activate` on macOS/Linux
 pip install -r requirements.txt
 
-alembic upgrade head            # apply migrations
-python seed.py                   # optional: create demo data (see below)
+alembic upgrade head              # apply migrations
+python seed.py                     # optional: create demo data
 
 uvicorn app.main:app --reload --port 8000
 ```
 
-The API is now at `http://localhost:8000/api`, with interactive docs at
-`http://localhost:8000/docs`.
+API at `http://localhost:8000/api` — interactive docs at `http://localhost:8000/docs`.
 
-## Running the frontend
+### 3. Frontend
 
 ```bash
 cd frontend
@@ -241,32 +405,13 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`. The dev server proxies `/api/*` to `http://localhost:8000` (see
-`vite.config.ts`) — keep the backend running on port 8000 for this to work.
+Open `http://localhost:5173`. The dev server proxies `/api/*` to the backend (see
+`vite.config.ts`) so the refresh-token cookie stays same-site — keep the backend running on port
+8000.
 
-## Testing
+### Demo login
 
-```bash
-cd backend
-pytest
-```
-
-Covers: registration/login/protected routes, RBAC (member vs admin vs owner), all four split
-methods (including rounding-remainder correctness), the balance engine (reproduces the spec's
-worked "Goa Trip" example), debt simplification (chain-collapsing and balance conservation),
-settlement effects on balances, audit hash determinism, chain verification, and — critically —
-tamper detection against a directly-mutated database row.
-
-## Demo data
-
-```bash
-cd backend
-python seed.py
-```
-
-This drops and recreates the local SQLite database, then creates a "Goa Trip" with four users,
-five expenses across every split method, two settlements, and runs a verification pass — so the
-Security Center and Audit Ledger have real data the moment you log in.
+If you ran `python seed.py`:
 
 | Email | Password |
 |---|---|
@@ -275,40 +420,188 @@ Security Center and Audit Ledger have real data the moment you log in.
 | arjun@splitsmart.demo | Demo1234! |
 | aditya@splitsmart.demo | Demo1234! |
 
-## API overview
+---
 
-All routes are prefixed `/api`. Full interactive documentation (request/response schemas) is
-available at `/docs` once the backend is running.
+## 🔌 API Architecture
 
+```text
+React Component
+      │
+      ▼
+Typed API module (frontend/src/api/*.ts)
+      │
+      ▼
+FastAPI Router  →  RBAC dependency  →  current_user
+      │
+      ▼
+Service layer (business logic, Decimal math)
+      │
+      ▼
+SQLAlchemy  →  SQLite / PostgreSQL
+      │
+      ▼
+Audit event appended to the hash chain
 ```
-POST   /auth/register            POST   /auth/login              POST  /auth/refresh
-POST   /auth/logout              GET    /auth/me                 PATCH /auth/me
-POST   /auth/change-password
 
-GET    /trips                    POST   /trips
-GET    /trips/{id}                PUT   /trips/{id}               DELETE /trips/{id}  (archive)
-GET    /trips/{id}/members        POST  /trips/{id}/members
-PATCH  /trips/{id}/members/{uid}  DELETE /trips/{id}/members/{uid}
+All routes are prefixed `/api`; full interactive request/response schemas are available at
+`/docs` once the backend is running. Representative endpoints:
 
-GET    /trips/{id}/expenses       POST  /trips/{id}/expenses
-GET    /expenses/{id}             PUT   /expenses/{id}            POST /expenses/{id}/void
-POST   /expenses/{id}/receipt     GET   /expenses/{id}/receipt
+```text
+POST /auth/register            POST /auth/login             POST /auth/refresh
+POST /auth/logout              GET  /auth/me                 PATCH /auth/me
 
-GET    /trips/{id}/balances       GET   /trips/{id}/debts
+GET  /trips                     POST /trips
+GET  /trips/{id}                 PUT  /trips/{id}              DELETE /trips/{id}  (archive)
+POST /trips/{id}/members          PATCH/DELETE /trips/{id}/members/{uid}
 
-GET    /trips/{id}/settlements    POST  /trips/{id}/settlements
-POST   /settlements/{id}/cancel
+GET/POST /trips/{id}/expenses      PUT /expenses/{id}           POST /expenses/{id}/void
+POST/GET /expenses/{id}/receipt
 
-GET    /trips/{id}/audit          POST  /trips/{id}/audit/verify
-GET    /audit                     POST  /audit/verify
+GET  /trips/{id}/balances          GET  /trips/{id}/debts
 
-GET    /security/overview
+GET/POST /trips/{id}/settlements    POST /settlements/{id}/cancel
 
-GET    /notifications             PATCH /notifications/{id}/read  POST /notifications/read-all
+GET  /trips/{id}/audit               POST /trips/{id}/audit/verify
+GET  /audit                            POST /audit/verify
 
-GET    /reports/{trip_id}
-GET    /reports/{trip_id}/export/csv?type=expenses|balances|settlements|audit
-GET    /reports/{trip_id}/export/pdf
-
-GET    /dashboard
+GET  /security/overview
+GET  /reports/{trip_id}                 GET /reports/{trip_id}/export/csv|pdf
+GET  /dashboard
 ```
+
+---
+
+## 📊 Example Expense Flow
+
+```text
+Expense Created
+      │
+      ├── description, amount, currency
+      ├── paid_by (must be an active trip member)
+      ├── category, date, notes
+      └── split_method + participants
+             │
+             ▼
+   Backend validates & computes shares
+   (equal / exact / percentage / shares —
+    never trusted from the frontend)
+             │
+             ▼
+       Balances recalculated
+             │
+             ▼
+   EXPENSE_CREATED audit event written,
+   chained to previous_hash
+             │
+             ▼
+     Dashboard, balances, and debts
+        reflect the new state
+```
+
+---
+
+## 🧪 Testing & Validation
+
+```bash
+cd backend
+pytest
+```
+
+**48 tests**, covering:
+
+- Registration, login, protected routes, password change
+- RBAC — member vs. admin vs. owner, including "can't remove the only owner" and
+  "only an owner can grant OWNER"
+- All four split methods, including rounding-remainder correctness (e.g. splitting ₹100 three
+  ways sums back to exactly ₹100.00)
+- The balance engine — reproduces the spec's worked "Goa Trip" example exactly
+- Debt simplification — chain-collapsing (A→B→C nets to a single A→C) and balance conservation
+- Settlement effects on balances
+- Audit hash determinism and full-chain verification
+- **Tamper detection** — a test directly mutates an `audit_logs` row via the DB session, bypassing
+  every service function, and asserts verification reports `COMPROMISED` with the exact affected
+  record
+
+### Development validation flow
+
+```text
+Implement  →  pytest  →  tsc --build  →  Verify in browser  →  Commit  →  Push
+```
+
+---
+
+## 🗺️ Roadmap
+
+### Expense Intelligence
+
+- [ ] OCR-assisted receipt extraction (assistive only — never auto-trusted into financial values)
+- [ ] AI-powered expense categorization suggestions
+- [ ] Recurring expenses
+
+### Analytics
+
+- [ ] Historical spending trends across trips
+- [ ] Exportable multi-trip reports
+
+### Platform
+
+- [ ] PostgreSQL deployment guide
+- [ ] Email notifications alongside in-app ones
+- [ ] Two-factor authentication
+- [ ] Cloud deployment (containerized)
+
+---
+
+## 🎯 Project Goals
+
+SplitSmart explores the intersection of:
+
+- 💰 Expense Management
+- 🔐 Applied Security (auth, RBAC, cryptographic integrity)
+- 🔗 Auditability & Tamper-Evidence
+- 📊 Financial Correctness (server-side money math, tested)
+- ⚙️ Full-Stack Engineering (FastAPI + React/TypeScript)
+
+The goal: shared expenses that are **transparent, correct, and provably untampered.**
+
+---
+
+## ⚠️ Disclaimer
+
+SplitSmart implements security controls (password hashing, RBAC, JWT sessions, rate limiting, a
+cryptographic audit chain) **in-house**, inspired by SOC 2 / ISO 27001 principles. **It is not
+independently certified against SOC 2, ISO 27001, or any other standard**, and makes no such
+claim.
+
+The audit chain is **tamper-evident, not tamper-proof**: it detects edits made through or around
+the application (including direct database edits) that don't also correctly recompute every
+downstream hash. A person with full, sustained database access who recomputed the entire forward
+chain could still evade detection — the same fundamental limit any single-database hash chain
+has. This is a demonstration/portfolio project, not an audited production security product;
+financial and security-critical decisions should not be based on it as-is.
+
+---
+
+## 👨‍💻 Author
+
+**Krishiv Sharma**
+
+B.Tech CSE — Cybersecurity
+
+Interested in:
+
+**Cybersecurity • Software Engineering • AI • Secure Systems**
+
+---
+
+<div align="center">
+
+### 💸 SplitSmart
+
+**Transparent Expenses · Tamper-Evident Records · Verifiable Trust**
+
+Built with a focus on **Security · Auditability · Full-Stack Engineering**
+
+⭐ If you found SplitSmart interesting, consider starring the repository.
+
+</div>
