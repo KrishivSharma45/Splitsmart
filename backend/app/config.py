@@ -1,6 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -34,6 +35,15 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.ENVIRONMENT.lower() == "production"
+
+    @field_validator("DATABASE_URL")
+    @classmethod
+    def _normalize_database_url(cls, v: str) -> str:
+        # Some providers (Render, Heroku) hand out the legacy `postgres://`
+        # scheme, which SQLAlchemy 1.4+/2.0 no longer accepts.
+        if v.startswith("postgres://"):
+            return "postgresql://" + v[len("postgres://") :]
+        return v
 
 
 @lru_cache

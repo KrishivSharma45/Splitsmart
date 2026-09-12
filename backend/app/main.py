@@ -1,11 +1,13 @@
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 
 from app import models  # noqa: F401  (ensures all models are registered on Base.metadata)
@@ -91,3 +93,25 @@ app.include_router(security.router)
 app.include_router(notifications.router)
 app.include_router(reports.router)
 app.include_router(dashboard.router)
+
+
+# Optional: serve the built frontend (frontend/dist) from this same FastAPI
+# process, so the SPA and the API share one origin in production -- no CORS,
+# no cross-site cookie concerns. Registered last so it never shadows an
+# /api/* route above. Absent entirely for local dev, where the frontend runs
+# under its own Vite dev server instead.
+FRONTEND_DIST = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
+
+if FRONTEND_DIST.is_dir():
+    assets_dir = FRONTEND_DIST / "assets"
+    if assets_dir.is_dir():
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="frontend-assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_frontend(full_path: str):
+        if full_path.startswith("api/") or full_path == "api":
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
+        candidate = FRONTEND_DIST / full_path
+        if full_path and candidate.is_file():
+            return FileResponse(candidate)
+        return FileResponse(FRONTEND_DIST / "index.html")
