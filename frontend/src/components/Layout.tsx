@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Logo, Wordmark } from "./Logo";
 import { NotificationBell } from "./NotificationBell";
+import { PageSpinner } from "./ui/Spinner";
 
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard", icon: DashboardIcon },
@@ -98,7 +99,9 @@ export function Layout() {
           <NotificationBell />
         </header>
         <main className="flex-1 overflow-x-hidden px-4 py-6 md:px-8 md:py-8">
-          <Outlet />
+          <Suspense fallback={<PageSpinner />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>
