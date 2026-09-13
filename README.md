@@ -26,6 +26,12 @@ whether that history has been altered.
 ![Tests](https://img.shields.io/badge/Tests-48%20passing-success?style=for-the-badge)
 ![Audit](https://img.shields.io/badge/Audit-SHA--256%20Chained-red?style=for-the-badge)
 
+<br>
+
+### 🔗 [**Live demo — splitsmart-qxdn.onrender.com**](https://splitsmart-qxdn.onrender.com)
+
+<sub>Hosted on Render's free tier — the first request after a period of inactivity can take up to ~50s to wake the server back up.</sub>
+
 </div>
 
 ---
@@ -359,6 +365,10 @@ SplitSmart/
 ---
 
 ## 🚀 Getting Started
+
+> Just want to try it? Skip straight to the **[live demo](https://splitsmart-qxdn.onrender.com)** —
+> register a real account (all split methods, audit verification, and the Security Center are
+> live) instead of running it locally.
 
 ### Prerequisites
 
