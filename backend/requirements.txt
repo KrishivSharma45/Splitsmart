@@ -4,7 +4,7 @@ sqlalchemy==2.0.35
 alembic==1.13.2
 psycopg2-binary==2.9.9
 pydantic==2.9.2
-pydantic-settings==2.5.2
+pydantic-settings==2.15.0
 email-validator==2.2.0
 passlib[bcrypt]==1.7.4
 bcrypt==4.0.1
