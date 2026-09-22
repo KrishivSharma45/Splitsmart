@@ -28,6 +28,11 @@ whether that history has been altered.
 
 <br>
 
+[![Backend CI](https://github.com/KrishivSharma45/Splitsmart/actions/workflows/backend.yml/badge.svg)](https://github.com/KrishivSharma45/Splitsmart/actions/workflows/backend.yml)
+[![Frontend CI](https://github.com/KrishivSharma45/Splitsmart/actions/workflows/frontend.yml/badge.svg)](https://github.com/KrishivSharma45/Splitsmart/actions/workflows/frontend.yml)
+
+<br>
+
 ### 🔗 [**Live demo — splitsmart-qxdn.onrender.com**](https://splitsmart-qxdn.onrender.com)
 
 <sub>Hosted on Render's free tier — the first request after a period of inactivity can take up to ~50s to wake the server back up.</sub>
@@ -537,6 +542,18 @@ pytest
 ```text
 Implement  →  pytest  →  tsc --build  →  Verify in browser  →  Commit  →  Push
 ```
+
+### Continuous Integration
+
+Two GitHub Actions workflows run on every push/PR that touches their half of the repo:
+
+- **[Backend](.github/workflows/backend.yml)** — installs `backend/requirements.txt`, runs the
+  full pytest suite on Python 3.11
+- **[Frontend](.github/workflows/frontend.yml)** — installs npm deps, runs `tsc -b && vite build`
+  on Node 20
+
+Both are path-filtered (backend changes don't trigger a frontend run and vice versa) and need no
+secrets — the backend tests run against an in-memory SQLite DB via the `conftest.py` fixtures.
 
 ---
 
